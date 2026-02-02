@@ -11,6 +11,7 @@ export const endpoints = {
     // Admin Authentication
     admin: () => `${BASE_URL}/api/admin`,
     adminLogin: () => `${BASE_URL}/api/admin/login`,
+    adminChangePassword: () => `${BASE_URL}/api/admin/change-password`,
 
     // Blog Endpoints
     blogs: () => `${BASE_URL}/website/admin/blogs`,
@@ -23,3 +24,4 @@ export const endpoints = {
 };
 
 export default endpoints;
+

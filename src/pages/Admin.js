@@ -78,6 +78,23 @@ const Admin = () => {
         category: 'Organiser'
     });
 
+    // Change Password State
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [passwordFormData, setPasswordFormData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+    // Password visibility toggles
+    const [showLoginPassword, setShowLoginPassword] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     // Load blogs and FAQs on mount
     const fetchBlogs = async () => {
         const data = await getBlogs();
@@ -203,6 +220,80 @@ const Admin = () => {
         localStorage.removeItem('adminAuth');
         localStorage.removeItem('savedCredentials');
     };
+
+    // Change Password Handlers
+    const handlePasswordInputChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        setPasswordError('');
+        setPasswordSuccess('');
+    };
+
+    const resetPasswordForm = () => {
+        setPasswordFormData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        });
+        setPasswordError('');
+        setPasswordSuccess('');
+        setShowChangePassword(false);
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        setPasswordError('');
+        setPasswordSuccess('');
+
+        // Validate passwords match
+        if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+            setPasswordError('New passwords do not match');
+            return;
+        }
+
+        // Validate password length
+        if (passwordFormData.newPassword.length < 6) {
+            setPasswordError('New password must be at least 6 characters long');
+            return;
+        }
+
+        setIsChangingPassword(true);
+
+        try {
+            const response = await fetch(endpoints.adminChangePassword(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: loginData.email,
+                    currentPassword: passwordFormData.currentPassword,
+                    newPassword: passwordFormData.newPassword
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setPasswordSuccess('Password changed successfully!');
+                // Clear the form after success
+                setTimeout(() => {
+                    resetPasswordForm();
+                }, 2000);
+            } else {
+                setPasswordError(data.message || 'Failed to change password');
+            }
+        } catch (error) {
+            console.error('Change password error:', error);
+            setPasswordError('Server error. Please try again later.');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
 
     // Reset form
     const resetForm = () => {
@@ -477,14 +568,24 @@ const Admin = () => {
                             </div>
                             <div className="login-form-group">
                                 <label>Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={loginData.password}
-                                    onChange={handleLoginInputChange}
-                                    placeholder="Enter your password"
-                                    required
-                                />
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showLoginPassword ? "text" : "password"}
+                                        name="password"
+                                        value={loginData.password}
+                                        onChange={handleLoginInputChange}
+                                        placeholder="Enter your password"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                                        tabIndex={-1}
+                                    >
+                                        {showLoginPassword ? '👁️' : '👁️‍🗨️'}
+                                    </button>
+                                </div>
                             </div>
                             <div className="remember-me-group">
                                 <label className="remember-me-label">
@@ -530,6 +631,7 @@ const Admin = () => {
                 <div className="header-buttons">
                     <button className={`nav-btn ${view === 'blogs' ? 'active' : ''}`} onClick={() => setView('blogs')}>Blogs</button>
                     <button className={`nav-btn ${view === 'faqs' ? 'active' : ''}`} onClick={() => setView('faqs')}>FAQs</button>
+                    <button className="nav-btn" onClick={() => setShowChangePassword(true)}>Change Password</button>
 
                     <button className="logout-btn" onClick={handleLogout}>
                         Logout
@@ -541,6 +643,99 @@ const Admin = () => {
                     )}
                 </div>
             </header>
+
+            {/* Change Password Modal */}
+            {showChangePassword && (
+                <div className="modal-overlay">
+                    <div className="blog-modal-content password-modal">
+                        <div className="modal-header">
+                            <h2>Change Password</h2>
+                            <button className="close-btn" onClick={resetPasswordForm}>×</button>
+                        </div>
+                        <form className="blog-form" onSubmit={handleChangePassword}>
+                            <div className="form-group">
+                                <label>Current Password *</label>
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showCurrentPassword ? "text" : "password"}
+                                        name="currentPassword"
+                                        value={passwordFormData.currentPassword}
+                                        onChange={handlePasswordInputChange}
+                                        placeholder="Enter your current password"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                        tabIndex={-1}
+                                    >
+                                        {showCurrentPassword ? '👁️' : '👁️‍🗨️'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>New Password *</label>
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showNewPassword ? "text" : "password"}
+                                        name="newPassword"
+                                        value={passwordFormData.newPassword}
+                                        onChange={handlePasswordInputChange}
+                                        placeholder="Enter new password (min 6 characters)"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        tabIndex={-1}
+                                    >
+                                        {showNewPassword ? '👁️' : '👁️‍🗨️'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label>Re-type New Password *</label>
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirmPassword"
+                                        value={passwordFormData.confirmPassword}
+                                        onChange={handlePasswordInputChange}
+                                        placeholder="Confirm new password"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        tabIndex={-1}
+                                    >
+                                        {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                                    </button>
+                                </div>
+                            </div>
+                            {passwordError && (
+                                <div className="password-error">
+                                    <span>⚠️</span> {passwordError}
+                                </div>
+                            )}
+                            {passwordSuccess && (
+                                <div className="password-success">
+                                    <span>✅</span> {passwordSuccess}
+                                </div>
+                            )}
+                            <div className="form-actions">
+                                <button type="button" className="cancel-btn" onClick={resetPasswordForm}>Cancel</button>
+                                <button type="submit" className="submit-btn" disabled={isChangingPassword}>
+                                    {isChangingPassword ? 'Changing...' : 'Change Password'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {view === 'blogs' ? (
                 /* Main Content - BLOGS */
