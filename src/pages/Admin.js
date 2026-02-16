@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBlogs } from './blogStorage';
-import { getFAQs, answerQuestion, deleteQuestion, addFAQ, updateFAQ } from './faqStorage';
+import { getFAQs, deleteQuestion, addFAQ, updateFAQ } from './faqStorage';
 import BlogImage from '../assets/Blog_Page_Image.png';
 import RichTextEditor from '../components/RichTextEditor';
 import './Admin.css';
@@ -65,8 +65,7 @@ const Admin = () => {
     const [view, setView] = useState('blogs'); // 'blogs' or 'faqs'
     const [faqs, setFaqs] = useState([]);
     const [selectedFAQCategory, setSelectedFAQCategory] = useState('Organiser'); // FAQ specific filter
-    const [answeringId, setAnsweringId] = useState(null);
-    const [answerText, setAnswerText] = useState('');
+
 
     // FAQ Form State
     const [isAddingFAQ, setIsAddingFAQ] = useState(false);
@@ -455,24 +454,7 @@ const Admin = () => {
     };
 
     // FAQ Handlers
-    const handleAnswerClick = (faq) => {
-        setAnsweringId(faq._id);
-        setAnswerText(faq.answer || '');
-    };
 
-    const handleSaveAnswer = async (id) => {
-        await answerQuestion(id, answerText);
-        setAnsweringId(null);
-        setAnswerText('');
-        // Re-fetch to update state
-        const updated = await getFAQs();
-        setFaqs(updated.reverse());
-    };
-
-    const handleCancelAnswer = () => {
-        setAnsweringId(null);
-        setAnswerText('');
-    };
 
     const handleDeleteFAQ = async (id) => {
         if (window.confirm('Are you sure you want to delete this question?')) {
